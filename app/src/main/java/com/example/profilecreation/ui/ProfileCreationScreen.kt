@@ -1,5 +1,11 @@
 package com.example.profilecreation.ui
 
+import android.net.Uri
+import android.os.StrictMode
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,6 +40,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -42,24 +52,33 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
+import coil.compose.rememberAsyncImagePainter
 import com.example.profilecreation.R
+import com.example.profilecreation.ui.components.Util
+import java.util.Objects
 
 
 @Composable
 fun ProfileCreationScreen(
     modifier: Modifier = Modifier,
-    onSubmitButtonClicked: (String, String, String, String) -> Unit
+    onSubmitButtonClicked: (String, String, String, String, Uri) -> Unit
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .imePadding()
+            .padding(dimensionResource(id = R.dimen.padding_large))
     ) {
-
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(dimensionResource(id = R.dimen.padding_large))
+                .imePadding(),
+            contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = modifier.fillMaxWidth(),
@@ -91,12 +110,37 @@ fun ProfileCreationScreen(
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
 
                 //Camera row
+                var imageCaptureState by remember { mutableStateOf(false) }
+                val context = LocalContext.current
+                val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission().apply{}){}
+                val file = Util().createImageFile(context)
+                try {
+                    val m =
+                        StrictMode::class.java.getMethod("disableDeathOnFileUriExposure")
+                    m.invoke(null)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                val imgUri by remember{mutableStateOf(
+                    FileProvider.getUriForFile(
+                        Objects.requireNonNull(context),
+                        context.packageName + ".provider", file)
+                )}
+                val captureLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()){
+                    Toast.makeText(context, "Image capture: ${if(it) "Successful" else "Failed"}", Toast.LENGTH_SHORT)
+                        .show()
+                    imageCaptureState = it
+                }
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Button(
-                        onClick = { /*To do*/},
+                        onClick = {
+                            if(ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) != PERMISSION_GRANTED)
+                                permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            else captureLauncher.launch(imgUri)
+                        },
                         modifier = Modifier,
                         colors = ButtonDefaults.buttonColors(Color.LightGray),
                         shape = RoundedCornerShape(10.dp)
@@ -107,11 +151,18 @@ fun ProfileCreationScreen(
                                 .heightIn(150.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = stringResource(id = R.string.tap_to_add_avatar),
-                                color = Color.Gray
-
-                            )
+                            if (!imageCaptureState) {
+                                Text(
+                                    text = stringResource(id = R.string.tap_to_add_avatar),
+                                    color = Color.Gray
+                                )
+                            } else {
+                                Image(
+                                    painter = rememberAsyncImagePainter(imgUri),
+                                    contentDescription = null,
+                                    modifier.size(150.dp),
+                                    contentScale = ContentScale.Fit)
+                            }
                         }
                     }
                 }
@@ -142,7 +193,9 @@ fun ProfileCreationScreen(
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedTextColor = Color.Gray,
+                            unfocusedTextColor = Color.Gray
                         )
                     )
                     OutlinedTextField(
@@ -159,7 +212,9 @@ fun ProfileCreationScreen(
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedTextColor = Color.Gray,
+                            unfocusedTextColor = Color.Gray
                         )
                     )
                     var passwordVisible by remember { mutableStateOf(false) }
@@ -177,7 +232,9 @@ fun ProfileCreationScreen(
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedTextColor = Color.Gray,
+                            unfocusedTextColor = Color.Gray
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -207,13 +264,15 @@ fun ProfileCreationScreen(
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedTextColor = Color.Gray,
+                            unfocusedTextColor = Color.Gray
                         )
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
-                    onClick = { onSubmitButtonClicked(name, email, password, website) },
+                    onClick = { onSubmitButtonClicked(name, email, password, website, imgUri) },
                     Modifier
                         .fillMaxWidth()
                         .height(50.dp)
@@ -234,5 +293,5 @@ fun ProfileCreationScreen(
 @Composable
 fun ProfileCreationScreenPreview() {
     ProfileCreationScreen(
-        onSubmitButtonClicked = { s: String, s1: String, s2: String, s3: String -> })
+        onSubmitButtonClicked = { s, s1, s2, s3, uri -> })
 }

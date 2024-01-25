@@ -1,6 +1,7 @@
 package com.example.profilecreation
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import com.example.profilecreation.ui.theme.ProfileCreationTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_MODE_CHANGED)
         setContent {
             ProfileCreationTheme {
                 // A surface container using the 'background' color from the theme
@@ -25,19 +27,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-//
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    ProfileCreationTheme {
-//        Greeting("Android")
-//    }
-//}

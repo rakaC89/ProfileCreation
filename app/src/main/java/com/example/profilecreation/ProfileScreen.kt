@@ -1,5 +1,6 @@
 package com.example.profilecreation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,8 +34,8 @@ fun ProfileApp(
     ) {
         composable(ProfileScreen.Creation.title) {
             ProfileCreationScreen(
-                onSubmitButtonClicked = { name: String, email: String, password: String, website: String ->
-                    viewModel.setProfileValues(name, email, password, website)
+                onSubmitButtonClicked = { name: String, email: String, password: String, website: String, imgUri: Uri ->
+                    viewModel.setProfileValues(name, email, password, website, imgUri)
                     navController.navigate(ProfileScreen.Summary.title) }
             )
         }
